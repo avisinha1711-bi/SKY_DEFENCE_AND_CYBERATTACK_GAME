@@ -149,6 +149,28 @@
         .warning-area.hidden {
             display: none;
         }
+
+        .cyber-instruction {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 150;
+            color: #0088ff;
+            font-size: 1.1em;
+            font-weight: bold;
+            animation: pulse 0.8s infinite;
+        }
+
+        .cyber-instruction.hidden {
+            display: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
         
         .game-over-screen {
             position: fixed;
@@ -213,6 +235,55 @@
         .controls-info p {
             margin: 5px 0;
         }
+
+        .cyber-button-container {
+            position: absolute;
+            bottom: 170px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+
+        .cyber-button {
+            padding: 12px 24px;
+            font-size: 1em;
+            background: #0088ff;
+            color: #fff;
+            border: 2px solid #0088ff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px #0088ff;
+        }
+
+        .cyber-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            background: #00aaff;
+            border-color: #00aaff;
+            box-shadow: 0 0 20px #00aaff;
+        }
+
+        .cyber-button:disabled {
+            background: #555;
+            border-color: #555;
+            color: #999;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .cyber-cooldown {
+            padding: 12px 24px;
+            font-size: 1em;
+            background: #555;
+            color: #fff;
+            border: 2px solid #555;
+            border-radius: 5px;
+            font-weight: bold;
+            text-transform: uppercase;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -223,7 +294,7 @@
             <p>Incoming aircraft detected</p>
             <p>Activate defense systems</p>
             <div class="warning-text">Multiple hostile signatures confirmed</div>
-            <button class="launch-btn" onclick="startDefense()">LAUNCH ATTACK</button>
+            <button class="launch-btn" id="startBtn">LAUNCH ATTACK</button>
         </div>
     </div>
     
@@ -232,10 +303,12 @@
         <div class="hud">
             <canvas id="radarCanvas"></canvas>
         </div>
+        <div class="cyber-button-container" id="cyberContainer"></div>
+        <div class="cyber-instruction hidden" id="cyberInstruction">Press C to launch CYBERATTACK</div>
         <div class="controls-info">
             <p>MOUSE: Aim gun</p>
             <p>SPACE: Fire</p>
-            <p>HOLD SPACE: Continuous fire</p>
+            <p>C: Cyberattack (every 10s)</p>
         </div>
         <div class="warning-area hidden" id="warningArea"></div>
     </div>
@@ -252,6 +325,8 @@
         const radarCanvas = document.getElementById('radarCanvas');
         const radarCtx = radarCanvas.getContext('2d');
         const warningArea = document.getElementById('warningArea');
+        const cyberContainer = document.getElementById('cyberContainer');
+        const cyberInstruction = document.getElementById('cyberInstruction');
         
         canvas.width = 1200;
         canvas.height = 600;
@@ -268,12 +343,16 @@
             planes: [],
             missiles: [],
             enemyMissiles: [],
+            explosions: [],
+            cyberExplosions: [],
             planeSpawnTimer: 0,
             largeSpawnTimer: 0,
             gameTime: 0,
             planesDestroyed: 0,
             penetrations: 0,
-            fireTimer: 0
+            fireTimer: 0,
+            cyberAttackCooldown: 0,
+            cyberAttackInterval: 600
         };
         
         class Plane {
@@ -289,6 +368,8 @@
                 this.maneuverTimer = 0;
                 this.targetY = this.y;
                 this.maneuverDir = Math.random() > 0.5 ? 1 : -1;
+                this.isCyberAttacked = false;
+                this.hasFiredMissile = false;
             }
             
             update() {
@@ -306,8 +387,8 @@
                 this.y = Math.max(30, Math.min(canvas.height - 100, this.y));
                 
                 this.firingTimer++;
-                if (this.firingTimer > (this.isLarge ? 50 : 80)) {
-                    if (this.x < canvas.width - 200) {
+                if (this.firingTimer > (this.isLarge ? 100 : 150)) {
+                    if (this.x < canvas.width - 200 && !this.isCyberAttacked && !this.hasFiredMissile) {
                         this.fire();
                     }
                     this.firingTimer = 0;
@@ -324,9 +405,12 @@
                         y: this.y,
                         vx: (dx / dist) * 3,
                         vy: (dy / dist) * 3,
-                        size: 6,
-                        life: 250
+                        size: 8,
+                        life: 250,
+                        targetPlane: null,
+                        damage: 10
                     });
+                    this.hasFiredMissile = true;
                 }
             }
             
@@ -335,15 +419,15 @@
                 ctx.translate(this.x, this.y);
                 
                 if (this.isLarge) {
-                    ctx.fillStyle = '#cc0000';
+                    ctx.fillStyle = this.isCyberAttacked ? '#ff00ff' : '#cc0000';
                     ctx.fillRect(-20, -15, 40, 30);
-                    ctx.fillStyle = '#dd0000';
+                    ctx.fillStyle = this.isCyberAttacked ? '#ff00ff' : '#dd0000';
                     ctx.fillRect(-35, -5, 15, 10);
                     ctx.fillRect(20, -5, 15, 10);
-                    ctx.fillStyle = '#ff0055';
+                    ctx.fillStyle = this.isCyberAttacked ? '#ff00ff' : '#ff0055';
                     ctx.fillRect(-10, -8, 20, 16);
                 } else {
-                    ctx.fillStyle = '#ff0055';
+                    ctx.fillStyle = this.isCyberAttacked ? '#ff00ff' : '#ff0055';
                     ctx.beginPath();
                     ctx.moveTo(0, -10);
                     ctx.lineTo(15, 10);
@@ -351,7 +435,7 @@
                     ctx.lineTo(-15, 10);
                     ctx.closePath();
                     ctx.fill();
-                    ctx.strokeStyle = '#ff88cc';
+                    ctx.strokeStyle = this.isCyberAttacked ? '#ffff00' : '#ff88cc';
                     ctx.lineWidth = 1;
                     ctx.stroke();
                 }
@@ -386,12 +470,67 @@
                 ctx.fill();
             }
         }
+
+        class Explosion {
+            constructor(x, y, size = 30, isExplosion = false) {
+                this.x = x;
+                this.y = y;
+                this.maxSize = size;
+                this.currentSize = 0;
+                this.life = 30;
+                this.maxLife = 30;
+                this.isExplosion = isExplosion;
+            }
+
+            update() {
+                this.life--;
+                this.currentSize = this.maxSize * (1 - Math.abs(this.life - this.maxLife / 2) / (this.maxLife / 2));
+            }
+
+            draw() {
+                const alpha = this.life / this.maxLife;
+                
+                if (this.isExplosion) {
+                    // Orange/yellow explosion
+                    ctx.fillStyle = `rgba(255, 165, 0, ${alpha * 0.8})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = `rgba(255, 69, 0, ${alpha * 0.6})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.currentSize * 0.6, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.fillStyle = `rgba(255, 215, 0, ${alpha * 0.4})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.currentSize * 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // Cyan/electric cyber explosion
+                    ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.8})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.strokeStyle = `rgba(0, 200, 255, ${alpha * 0.6})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.currentSize * 1.2, 0, Math.PI * 2);
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = `rgba(100, 255, 255, ${alpha * 0.4})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.currentSize * 0.4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+        }
         
         function drawDefense() {
             ctx.save();
             ctx.translate(gameState.defense.x, gameState.defense.y);
             
-            // Base
             ctx.fillStyle = '#00ff88';
             ctx.fillRect(-18, -12, 36, 24);
             ctx.beginPath();
@@ -402,7 +541,6 @@
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Gun barrel
             ctx.rotate(gameState.defense.angle);
             ctx.fillStyle = '#00ff88';
             ctx.fillRect(0, -5, 50, 10);
@@ -512,7 +650,7 @@
                     const radarX = 75 + radarDist * Math.cos(angle);
                     const radarY = 75 + radarDist * Math.sin(angle);
                     
-                    radarCtx.fillStyle = plane.isLarge ? '#ff6600' : '#ff0055';
+                    radarCtx.fillStyle = plane.isCyberAttacked ? '#ff00ff' : (plane.isLarge ? '#ff6600' : '#ff0055');
                     radarCtx.beginPath();
                     radarCtx.arc(radarX, radarY, 2, 0, Math.PI * 2);
                     radarCtx.fill();
@@ -550,6 +688,47 @@
                 }
             }
         }
+
+        function launchCyberAttack() {
+            if (gameState.cyberAttackCooldown > 0 || gameState.planes.length === 0) return;
+
+            showWarning('CYBERATTACK LAUNCHED');
+            cyberInstruction.classList.add('hidden');
+            
+            // Make all planes crash to ground with explosions
+            gameState.planes.forEach(plane => {
+                gameState.cyberExplosions.push(new Explosion(plane.x, plane.y, 50, false));
+                plane.isCyberAttacked = true;
+                plane.vx = 0;
+                plane.vy = 3;
+                plane.targetY = canvas.height - 50;
+            });
+
+            // Clear all enemy missiles
+            gameState.enemyMissiles = [];
+
+            gameState.cyberAttackCooldown = gameState.cyberAttackInterval;
+            updateCyberButton();
+        }
+
+        function updateCyberButton() {
+            cyberContainer.innerHTML = '';
+
+            if (gameState.cyberAttackCooldown > 0) {
+                const cooldownSecs = Math.ceil(gameState.cyberAttackCooldown / 60);
+                const btn = document.createElement('div');
+                btn.className = 'cyber-cooldown';
+                btn.textContent = `CYBER: ${cooldownSecs}s`;
+                cyberContainer.appendChild(btn);
+                cyberInstruction.classList.add('hidden');
+            } else {
+                if (gameRunning && gameState.planes.length > 0) {
+                    cyberInstruction.classList.remove('hidden');
+                } else {
+                    cyberInstruction.classList.add('hidden');
+                }
+            }
+        }
         
         function showWarning(text) {
             warningArea.textContent = text;
@@ -562,6 +741,15 @@
         function updateGame() {
             gameState.gameTime++;
             
+            if (gameState.cyberAttackCooldown > 0) {
+                gameState.cyberAttackCooldown--;
+                if (gameState.cyberAttackCooldown % 60 === 0) {
+                    updateCyberButton();
+                }
+            } else if (gameRunning && gameState.planes.length > 0 && gameState.cyberAttackCooldown === 0) {
+                cyberInstruction.classList.remove('hidden');
+            }
+            
             spawnPlanes();
             
             if (spacePressed) {
@@ -569,6 +757,32 @@
             }
             
             gameState.planes.forEach(plane => plane.update());
+            
+            gameState.explosions.forEach((exp, i) => {
+                exp.update();
+                if (exp.life <= 0) {
+                    gameState.explosions.splice(i, 1);
+                }
+            });
+
+            gameState.cyberExplosions.forEach((exp, i) => {
+                exp.update();
+                if (exp.life <= 0) {
+                    gameState.cyberExplosions.splice(i, 1);
+                }
+            });
+
+            // Update cyberattacked planes - make them crash to ground
+            gameState.planes.forEach((plane, index) => {
+                if (plane.isCyberAttacked) {
+                    plane.y += plane.vy;
+                    if (plane.y >= canvas.height - 50) {
+                        gameState.explosions.push(new Explosion(plane.x, canvas.height - 50, 60, true));
+                        gameState.planes.splice(index, 1);
+                        gameState.planesDestroyed++;
+                    }
+                }
+            });
             
             gameState.missiles.forEach((m, i) => {
                 m.update();
@@ -584,9 +798,11 @@
                     
                     if (dist < plane.size + m.size) {
                         plane.health--;
+                        gameState.explosions.push(new Explosion(m.x, m.y, 35, true));
                         gameState.missiles.splice(i, 1);
                         
                         if (plane.health <= 0) {
+                            gameState.explosions.push(new Explosion(plane.x, plane.y, 45, true));
                             gameState.planes.splice(pIndex, 1);
                             gameState.planesDestroyed++;
                         }
@@ -595,32 +811,63 @@
             });
             
             gameState.enemyMissiles.forEach((m, i) => {
-                m.x += m.vx;
-                m.y += m.vy;
-                m.life--;
-                
-                if (m.life <= 0 || m.x < 0 || m.x > canvas.width || m.y < 0 || m.y > canvas.height) {
-                    gameState.enemyMissiles.splice(i, 1);
-                    return;
+                if (m.targetPlane) {
+                    const dx = m.targetPlane.x - m.x;
+                    const dy = m.targetPlane.y - m.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    m.vx = (dx / dist) * 3;
+                    m.vy = (dy / dist) * 3;
+
+                    if (dist < m.targetPlane.size + m.size) {
+                        m.targetPlane.health -= 5;
+                        gameState.explosions.push(new Explosion(m.x, m.y, 40, true));
+                        gameState.enemyMissiles.splice(i, 1);
+                        
+                        if (m.targetPlane.health <= 0) {
+                            gameState.explosions.push(new Explosion(m.targetPlane.x, m.targetPlane.y, 50, true));
+                            const planeIndex = gameState.planes.indexOf(m.targetPlane);
+                            if (planeIndex !== -1) {
+                                gameState.planes.splice(planeIndex, 1);
+                                gameState.planesDestroyed++;
+                            }
+                        }
+                        return;
+                    }
+                } else {
+                    m.x += m.vx;
+                    m.y += m.vy;
+                    
+                    if (m.x < 0 || m.x > canvas.width || m.y < 0 || m.y > canvas.height) {
+                        gameState.enemyMissiles.splice(i, 1);
+                        return;
+                    }
+                    
+                    const dx = gameState.defense.x - m.x;
+                    const dy = gameState.defense.y - m.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < 15 + m.size) {
+                        gameState.defense.health -= m.damage;
+                        gameState.explosions.push(new Explosion(m.x, m.y, 30, true));
+                        gameState.enemyMissiles.splice(i, 1);
+                        
+                        if (gameState.defense.health <= 0) {
+                            gameRunning = false;
+                        }
+                    }
                 }
                 
-                const dx = gameState.defense.x - m.x;
-                const dy = gameState.defense.y - m.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                
-                if (dist < 15 + m.size) {
-                    gameState.defense.health -= 8;
+                m.life--;
+                if (m.life <= 0) {
                     gameState.enemyMissiles.splice(i, 1);
-                    
-                    if (gameState.defense.health <= 0) {
-                        gameRunning = false;
-                    }
                 }
             });
             
             gameState.planes = gameState.planes.filter(p => {
                 if (p.x < 0) {
-                    gameState.penetrations++;
+                    if (!p.isCyberAttacked) {
+                        gameState.penetrations++;
+                    }
                     if (gameState.penetrations >= 10) {
                         gameRunning = false;
                     }
@@ -639,11 +886,14 @@
             gameState.missiles.forEach(m => m.draw());
             
             gameState.enemyMissiles.forEach(m => {
-                ctx.fillStyle = '#ff6600';
+                ctx.fillStyle = m.targetPlane ? '#ff00ff' : '#ff6600';
                 ctx.beginPath();
                 ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
                 ctx.fill();
             });
+
+            gameState.explosions.forEach(exp => exp.draw());
+            gameState.cyberExplosions.forEach(exp => exp.draw());
             
             drawDefense();
             drawRadar();
@@ -673,21 +923,23 @@
             document.getElementById('gameContainer').classList.add('active');
             gameRunning = true;
             showWarning('Invasion started');
+            updateCyberButton();
             gameLoop();
         }
         
-        // Mouse movement to aim gun
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             mouseX = e.clientX - rect.left;
             mouseY = e.clientY - rect.top;
         });
         
-        // Space key for continuous fire
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 e.preventDefault();
                 spacePressed = true;
+            }
+            if (e.code === 'KeyC' || e.key === 'c') {
+                launchCyberAttack();
             }
         });
         
@@ -697,6 +949,8 @@
                 gameState.fireTimer = 0;
             }
         });
+
+        document.getElementById('startBtn').addEventListener('click', startDefense);
         
         gameLoop();
     </script>
