@@ -3,1115 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SKYBER</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Arial', sans-serif;
-            background: #000;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .splash-screen {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #0a0a1a 0%, #101025 100%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            flex-direction: column;
-            text-align: center;
-            color: #fff;
-        }
-        
-        .splash-screen.hidden {
-            display: none;
-        }
-        
-        .splash-content {
-            animation: slideUp 0.8s ease-out;
-        }
-        
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
-        .splash-screen h1 {
-            font-size: 3em;
-            color: #0088ff;
-            margin-bottom: 20px;
-            letter-spacing: 3px;
-        }
-        
-        .splash-screen p {
-            font-size: 1.5em;
-            color: #00ffaa;
-            margin: 30px 0;
-            max-width: 600px;
-            line-height: 1.6;
-        }
-        
-        .warning-text {
-            font-size: 1.3em;
-            color: #ff6600;
-            margin: 40px 0;
-            letter-spacing: 2px;
-        }
-        
-        .launch-btn {
-            padding: 20px 60px;
-            font-size: 1.5em;
-            background: #0088ff;
-            color: #fff;
-            border: 2px solid #0088ff;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-top: 40px;
-            transition: all 0.3s;
-        }
-        
-        .launch-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .game-container {
-            display: none;
-            width: 90vw;
-            height: 90vh;
-            max-width: 1200px;
-            max-height: 600px;
-            position: relative;
-            background: #0a0a1a;
-            border: 2px solid #222;
-            overflow: hidden;
-        }
-        
-        .game-container.active {
-            display: block;
-        }
-        
-        #gameCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            display: block;
-            cursor: crosshair;
-        }
-        
-        .hud {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 150px;
-            height: 150px;
-            border: 2px solid #00ffaa;
-            background: rgba(0, 0, 0, 0.8);
-            border-radius: 50%;
-            z-index: 100;
-        }
-        
-        #radarCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            border-radius: 50%;
-        }
-        
-        .warning-area {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            z-index: 150;
-            color: #ff6600;
-            font-size: 1.2em;
-            font-weight: bold;
-        }
-        
-        .warning-area.hidden {
-            display: none;
-        }
-
-        .cyber-instruction {
-            position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            z-index: 150;
-            color: #0088ff;
-            font-size: 1.1em;
-            font-weight: bold;
-            animation: pulse 0.8s infinite;
-        }
-
-        .cyber-instruction.hidden {
-            display: none;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .game-over-screen {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2001;
-            flex-direction: column;
-            text-align: center;
-            color: #fff;
-        }
-        
-        .game-over-screen.show {
-            display: flex;
-        }
-        
-        .game-over-screen h2 {
-            font-size: 2.5em;
-            color: #0088ff;
-            margin-bottom: 20px;
-        }
-        
-        .game-over-screen p {
-            font-size: 1.3em;
-            color: #00ffaa;
-            margin: 10px 0;
-        }
-        
-        .game-over-screen button {
-            padding: 15px 50px;
-            font-size: 1.2em;
-            background: #0088ff;
-            color: #fff;
-            border: 2px solid #0088ff;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 30px;
-            transition: all 0.3s;
-        }
-        
-        .game-over-screen button:hover {
-            transform: scale(1.05);
-        }
-
-        .controls-info {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 15px;
-            border: 2px solid #00ffaa;
-            color: #00ffaa;
-            font-size: 0.9em;
-            z-index: 100;
-            border-radius: 5px;
-        }
-
-        .controls-info p {
-            margin: 5px 0;
-        }
-
-        .cyber-button-container {
-            position: absolute;
-            bottom: 170px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-        }
-
-        .cyber-button {
-            padding: 12px 24px;
-            font-size: 1em;
-            background: #0088ff;
-            color: #fff;
-            border: 2px solid #0088ff;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            transition: all 0.3s;
-            box-shadow: 0 0 10px #0088ff;
-        }
-
-        .cyber-button:hover:not(:disabled) {
-            transform: scale(1.05);
-            background: #00aaff;
-            border-color: #00aaff;
-            box-shadow: 0 0 20px #00aaff;
-        }
-
-        .cyber-button:disabled {
-            background: #333;
-            border-color: #333;
-            color: #666;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
-        .cyber-cooldown {
-            padding: 12px 24px;
-            font-size: 1em;
-            background: #333;
-            color: #666;
-            border: 2px solid #333;
-            border-radius: 5px;
-            font-weight: bold;
-            text-transform: uppercase;
-            cursor: not-allowed;
-        }
-    </style>
+    <title>SKY DEFENSE COMMAND</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="splash-screen" id="splashScreen">
         <div class="splash-content">
-            <h1>EASTERN COMMAND</h1>
-            <p>Enemy has initiated air raid</p>
-            <p>Incoming aircraft detected</p>
-            <p>Activate defense systems</p>
-            <div class="warning-text">Multiple hostile signatures confirmed</div>
-            <button class="launch-btn" id="startBtn">LAUNCH ATTACK</button>
+            <h1>SKY DEFENSE COMMAND</h1>
+            <p>ELITE ENEMY FIGHTER DETECTED</p>
+            <p>ENGAGE IN INTENSE COMBAT</p>
+            <div class="warning-text">
+                <p>• ONE POWERFUL FIGHTER EVERY 5 SECONDS</p>
+                <p>• INTERCEPT MISSILES TO PROTECT YOUR TURRET</p>
+                <p>• CYBERATTACK DEALS MASSIVE DAMAGE</p>
+                <p>• TURRET HAS 10000 HP - MISSILES DO 20 DAMAGE</p>
+                <p>• CONTINUOUS WAVES - SURVIVE AS LONG AS POSSIBLE</p>
+            </div>
+            <button class="launch-btn" id="startBtn">ENGAGE COMBAT</button>
         </div>
     </div>
     
     <div class="game-container" id="gameContainer">
         <canvas id="gameCanvas"></canvas>
+        
+        <div class="stats-panel" id="statsPanel">
+            <div class="stat-item">
+                <span class="stat-label">DEFENSE HP</span>
+                <span class="stat-value" id="healthValue">10000</span>
+            </div>
+            <div class="health-bar-container">
+                <div class="health-bar" id="healthBar">
+                    <div class="health-fill" id="healthFill"></div>
+                </div>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">KILLS</span>
+                <span class="stat-value" id="planesDestroyed">0</span>
+            </div>
+            
+            <div class="stat-item">
+                <span class="stat-label">CYBER</span>
+                <span class="stat-value" id="cyberStatus">READY</span>
+            </div>
+        </div>
+        
+        <div class="enemy-stats" id="enemyStats">
+            <div class="label">ENEMY FIGHTER</div>
+            <div class="stat-item">
+                <span class="stat-label">HEALTH</span>
+                <span class="stat-value" id="enemyHealthValue">-</span>
+            </div>
+            <div class="enemy-health-bar">
+                <div class="enemy-health-fill" id="enemyHealthFill"></div>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">STATUS</span>
+                <span class="stat-value" id="enemyStatus">AWAITING</span>
+            </div>
+        </div>
+        
+        <div class="time-display" id="timeDisplay">DAYTIME</div>
+        <div class="score-display" id="scoreDisplay">
+            <div>SCORE</div>
+            <div class="score-value" id="scoreValue">0</div>
+        </div>
+        
+        <div class="spawn-timer" id="spawnTimer">
+            <div>NEXT WAVE</div>
+            <div class="timer-value" id="timerValue">5s</div>
+        </div>
+        
         <div class="hud">
             <canvas id="radarCanvas"></canvas>
         </div>
-        <div class="cyber-button-container" id="cyberContainer"></div>
-        <div class="cyber-instruction hidden" id="cyberInstruction">Press C to launch CYBERATTACK</div>
-        <div class="controls-info">
-            <p>MOUSE: Aim gun</p>
-            <p>SPACE: Fire</p>
-            <p>C: Cyberattack (every 10s)</p>
+        
+        <div class="heat-display" id="heatDisplay">
+            <span>HEAT:</span>
+            <div class="heat-bar">
+                <div class="heat-fill" id="heatFill"></div>
+            </div>
         </div>
-        <div class="warning-area hidden" id="warningArea"></div>
+        
+        <div class="cyber-button-container" id="cyberContainer">
+            <button class="cyber-button" id="cyberButton" disabled>CYBERATTACK</button>
+        </div>
+        
+        <div class="controls-info">
+            <p><kbd>MOUSE</kbd> AIM TURRET</p>
+            <p><kbd>SPACE</kbd> FIRE</p>
+            <p><kbd>C</kbd> CYBERATTACK</p>
+            <p><kbd>R</kbd> RESTART</p>
+            <p><kbd>ESC</kbd> PAUSE</p>
+        </div>
+        
+        <div class="notification" id="notification"></div>
     </div>
     
     <div class="game-over-screen" id="gameOverScreen">
-        <h2>DEFENSE COMPROMISED</h2>
-        <p id="finalStats"></p>
-        <button onclick="location.reload()">RESTART</button>
+        <div class="game-over-content">
+            <h2>DEFENSE COMPROMISED</h2>
+            <p id="gameOverMessage">ENEMY FIGHTERS HAVE PENETRATED YOUR TERRITORY</p>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="label">KILLS</div>
+                    <div class="value" id="finalPlanes">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">TIME</div>
+                    <div class="value" id="finalTime">0s</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">SCORE</div>
+                    <div class="value" id="finalScore">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">WAVE</div>
+                    <div class="value" id="finalWave">1</div>
+                </div>
+            </div>
+            <button onclick="location.reload()">RESTART MISSION</button>
+        </div>
     </div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const radarCanvas = document.getElementById('radarCanvas');
-        const radarCtx = radarCanvas.getContext('2d');
-        const warningArea = document.getElementById('warningArea');
-        const cyberContainer = document.getElementById('cyberContainer');
-        const cyberInstruction = document.getElementById('cyberInstruction');
-        
-        canvas.width = 1200;
-        canvas.height = 600;
-        radarCanvas.width = 150;
-        radarCanvas.height = 150;
-        
-        let gameRunning = false;
-        let spacePressed = false;
-        let mouseX = canvas.width / 2;
-        let mouseY = canvas.height / 2;
-        
-        // Background buildings data
-        const backgroundBuildings = [];
-        const midgroundBuildings = [];
-        
-        function createBackgroundBuildings() {
-            // Distant skyline buildings (very far away)
-            for (let i = 0; i < 15; i++) {
-                const x = (i * 100) + Math.random() * 50;
-                const width = 30 + Math.random() * 40;
-                const height = 100 + Math.random() * 200;
-                backgroundBuildings.push({
-                    x: x,
-                    width: width,
-                    height: height,
-                    color: `rgba(20, 25, 50, ${0.6 + Math.random() * 0.2})`,
-                    windows: Math.floor(height / 30),
-                    offset: Math.random() * 50
-                });
-            }
-            
-            // Midground buildings (closer but still far)
-            for (let i = 0; i < 10; i++) {
-                const x = (i * 120) + Math.random() * 80 - 40;
-                const width = 40 + Math.random() * 60;
-                const height = 150 + Math.random() * 250;
-                midgroundBuildings.push({
-                    x: x,
-                    width: width,
-                    height: height,
-                    color: `rgba(30, 35, 60, ${0.7 + Math.random() * 0.2})`,
-                    windows: Math.floor(height / 25),
-                    glow: Math.random() > 0.5
-                });
-            }
-        }
-        
-        function drawBackgroundBuildings() {
-            // Draw distant skyline
-            backgroundBuildings.forEach(building => {
-                const buildingY = canvas.height - 80 - building.height;
-                
-                // Building main structure
-                ctx.fillStyle = building.color;
-                ctx.fillRect(building.x, buildingY, building.width, building.height);
-                
-                // Building highlights
-                ctx.fillStyle = `rgba(40, 45, 80, 0.3)`;
-                ctx.fillRect(building.x + 2, buildingY + 2, building.width - 4, building.height - 4);
-                
-                // Building windows
-                for (let i = 0; i < building.windows; i++) {
-                    const windowX = building.x + 5 + Math.random() * (building.width - 10);
-                    const windowY = buildingY + 5 + i * 30 + building.offset;
-                    
-                    if (windowY < buildingY + building.height - 10) {
-                        ctx.fillStyle = Math.random() > 0.7 ? 'rgba(255, 200, 100, 0.3)' : 'rgba(100, 150, 255, 0.2)';
-                        ctx.fillRect(windowX, windowY, 4, 8);
-                    }
-                }
-                
-                // Building top
-                ctx.fillStyle = 'rgba(15, 20, 40, 0.8)';
-                ctx.fillRect(building.x - 5, buildingY, building.width + 10, 5);
-            });
-            
-            // Draw midground buildings
-            midgroundBuildings.forEach(building => {
-                const buildingY = canvas.height - 80 - building.height;
-                
-                // Building main structure with gradient
-                const gradient = ctx.createLinearGradient(
-                    building.x, buildingY,
-                    building.x + building.width, buildingY + building.height
-                );
-                gradient.addColorStop(0, building.color);
-                gradient.addColorStop(1, `rgba(20, 25, 50, ${0.8})`);
-                
-                ctx.fillStyle = gradient;
-                ctx.fillRect(building.x, buildingY, building.width, building.height);
-                
-                // Building edges
-                ctx.strokeStyle = 'rgba(50, 55, 90, 0.4)';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(building.x, buildingY, building.width, building.height);
-                
-                // Futuristic antenna or spire
-                if (building.glow) {
-                    ctx.fillStyle = 'rgba(0, 150, 255, 0.3)';
-                    ctx.fillRect(building.x + building.width/2 - 2, buildingY - 20, 4, 20);
-                    ctx.fillStyle = 'rgba(0, 150, 255, 0.6)';
-                    ctx.fillRect(building.x + building.width/2 - 1, buildingY - 10, 2, 10);
-                }
-                
-                // Detailed windows
-                const windowRows = Math.floor(building.height / 20);
-                const windowCols = Math.floor(building.width / 15);
-                
-                for (let row = 0; row < windowRows; row++) {
-                    for (let col = 0; col < windowCols; col++) {
-                        const windowX = building.x + 8 + col * 15;
-                        const windowY = buildingY + 8 + row * 20;
-                        
-                        if (windowX < building.x + building.width - 8 && windowY < buildingY + building.height - 8) {
-                            // Random lit windows
-                            if (Math.random() > 0.5) {
-                                ctx.fillStyle = Math.random() > 0.5 ? 
-                                    'rgba(100, 200, 255, 0.6)' : 
-                                    'rgba(255, 220, 100, 0.5)';
-                                ctx.fillRect(windowX, windowY, 6, 10);
-                                
-                                // Window glow
-                                if (Math.random() > 0.7) {
-                                    ctx.fillStyle = 'rgba(100, 200, 255, 0.2)';
-                                    ctx.fillRect(windowX - 2, windowY - 2, 10, 14);
-                                }
-                            } else {
-                                // Dark windows
-                                ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                                ctx.fillRect(windowX, windowY, 6, 10);
-                            }
-                        }
-                    }
-                }
-                
-                // Building base
-                ctx.fillStyle = 'rgba(20, 25, 45, 0.9)';
-                ctx.fillRect(building.x - 3, buildingY + building.height - 5, building.width + 6, 10);
-            });
-            
-            // Add some floating platforms in the distance
-            for (let i = 0; i < 5; i++) {
-                const platformX = 200 + i * 200 + Math.sin(gameState.gameTime * 0.01 + i) * 50;
-                const platformY = 100 + i * 40;
-                const platformWidth = 60 + Math.random() * 40;
-                const platformHeight = 5;
-                
-                // Platform glow effect
-                ctx.fillStyle = 'rgba(0, 100, 200, 0.1)';
-                ctx.fillRect(platformX - 5, platformY - 2, platformWidth + 10, platformHeight + 4);
-                
-                // Platform
-                ctx.fillStyle = 'rgba(40, 60, 100, 0.8)';
-                ctx.fillRect(platformX, platformY, platformWidth, platformHeight);
-                
-                // Platform lights
-                ctx.fillStyle = 'rgba(0, 150, 255, 0.6)';
-                ctx.fillRect(platformX + 5, platformY - 2, 3, 2);
-                ctx.fillRect(platformX + platformWidth - 8, platformY - 2, 3, 2);
-            }
-        }
-        
-        const gameState = {
-            defense: { x: 100, y: canvas.height - 100, angle: 0, health: 100 },
-            planes: [],
-            missiles: [],
-            enemyMissiles: [],
-            explosions: [],
-            cyberExplosions: [],
-            planeSpawnTimer: 0,
-            largeSpawnTimer: 0,
-            gameTime: 0,
-            planesDestroyed: 0,
-            penetrations: 0,
-            fireTimer: 0,
-            cyberAttackCooldown: 0,
-            cyberAttackInterval: 600
-        };
-        
-        class Plane {
-            constructor(isLarge = false) {
-                this.x = canvas.width;
-                this.y = Math.random() * 250 + 100;
-                this.vx = isLarge ? -1.2 : -1.5;
-                this.vy = 0;
-                this.size = isLarge ? 40 : 25;
-                this.health = isLarge ? 15 : 5;
-                this.isLarge = isLarge;
-                this.firingTimer = 0;
-                this.maneuverTimer = 0;
-                this.targetY = this.y;
-                this.maneuverDir = Math.random() > 0.5 ? 1 : -1;
-                this.isCyberAttacked = false;
-                this.hasFiredMissile = false;
-            }
-            
-            update() {
-                this.x += this.vx;
-                
-                this.maneuverTimer++;
-                if (this.maneuverTimer > 40) {
-                    this.maneuverDir = Math.random() > 0.5 ? 1 : -1;
-                    this.maneuverTimer = 0;
-                }
-                
-                this.vy = this.maneuverDir * 1.5;
-                this.y += this.vy;
-                
-                this.y = Math.max(30, Math.min(canvas.height - 100, this.y));
-                
-                this.firingTimer++;
-                if (this.firingTimer > (this.isLarge ? 100 : 150)) {
-                    if (this.x < canvas.width - 200 && !this.isCyberAttacked && !this.hasFiredMissile) {
-                        this.fire();
-                    }
-                    this.firingTimer = 0;
-                }
-            }
-            
-            fire() {
-                const dx = gameState.defense.x - this.x;
-                const dy = gameState.defense.y - this.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist > 0) {
-                    gameState.enemyMissiles.push({
-                        x: this.x,
-                        y: this.y,
-                        vx: (dx / dist) * 3,
-                        vy: (dy / dist) * 3,
-                        size: 8,
-                        life: 250,
-                        targetPlane: null,
-                        damage: 10
-                    });
-                    this.hasFiredMissile = true;
-                }
-            }
-            
-            draw() {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                
-                if (this.isLarge) {
-                    ctx.fillStyle = this.isCyberAttacked ? '#00ffff' : '#cc0000';
-                    ctx.fillRect(-20, -15, 40, 30);
-                    ctx.fillStyle = this.isCyberAttacked ? '#00ffff' : '#dd0000';
-                    ctx.fillRect(-35, -5, 15, 10);
-                    ctx.fillRect(20, -5, 15, 10);
-                    ctx.fillStyle = this.isCyberAttacked ? '#00ffff' : '#ff0055';
-                    ctx.fillRect(-10, -8, 20, 16);
-                } else {
-                    ctx.fillStyle = this.isCyberAttacked ? '#00ffff' : '#ff0055';
-                    ctx.beginPath();
-                    ctx.moveTo(0, -10);
-                    ctx.lineTo(15, 10);
-                    ctx.lineTo(0, 5);
-                    ctx.lineTo(-15, 10);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.strokeStyle = this.isCyberAttacked ? '#ffff00' : '#ff88cc';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                }
-                
-                ctx.restore();
-            }
-        }
-        
-        class Missile {
-            constructor(fromX, fromY, targetX, targetY) {
-                this.x = fromX;
-                this.y = fromY;
-                const dx = targetX - fromX;
-                const dy = targetY - fromY;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                this.vx = (dx / dist) * 8;
-                this.vy = (dy / dist) * 8;
-                this.size = 4;
-                this.life = 200;
-            }
-            
-            update() {
-                this.x += this.vx;
-                this.y += this.vy;
-                this.life--;
-            }
-            
-            draw() {
-                ctx.fillStyle = '#00ffaa';
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        class Explosion {
-            constructor(x, y, size = 30, isExplosion = false) {
-                this.x = x;
-                this.y = y;
-                this.maxSize = size;
-                this.currentSize = 0;
-                this.life = 30;
-                this.maxLife = 30;
-                this.isExplosion = isExplosion;
-            }
-
-            update() {
-                this.life--;
-                this.currentSize = this.maxSize * (1 - Math.abs(this.life - this.maxLife / 2) / (this.maxLife / 2));
-            }
-
-            draw() {
-                const alpha = this.life / this.maxLife;
-                
-                if (this.isExplosion) {
-                    // Orange/yellow explosion
-                    ctx.fillStyle = `rgba(255, 100, 0, ${alpha * 0.8})`;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = `rgba(255, 150, 0, ${alpha * 0.6})`;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.currentSize * 0.6, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.fillStyle = `rgba(255, 200, 0, ${alpha * 0.4})`;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.currentSize * 0.3, 0, Math.PI * 2);
-                    ctx.fill();
-                } else {
-                    // Cyan/electric cyber explosion
-                    ctx.fillStyle = `rgba(0, 255, 255, ${alpha * 0.8})`;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    ctx.strokeStyle = `rgba(0, 200, 255, ${alpha * 0.6})`;
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.currentSize * 1.2, 0, Math.PI * 2);
-                    ctx.stroke();
-                    
-                    ctx.fillStyle = `rgba(100, 255, 255, ${alpha * 0.4})`;
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.currentSize * 0.4, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-        }
-        
-        function drawDefense() {
-            ctx.save();
-            ctx.translate(gameState.defense.x, gameState.defense.y);
-            
-            ctx.fillStyle = '#00ffaa';
-            ctx.fillRect(-18, -12, 36, 24);
-            ctx.beginPath();
-            ctx.arc(0, 0, 15, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.strokeStyle = '#00ffaa';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            ctx.rotate(gameState.defense.angle);
-            ctx.fillStyle = '#00ffaa';
-            ctx.fillRect(0, -5, 50, 10);
-            ctx.beginPath();
-            ctx.arc(50, 0, 6, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.strokeStyle = '#00ffaa';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-            
-            ctx.restore();
-            
-            ctx.fillStyle = '#00ffaa';
-            ctx.font = '12px Arial';
-            ctx.fillText('HP:' + gameState.defense.health, gameState.defense.x - 20, gameState.defense.y + 35);
-            ctx.fillText('P:' + gameState.penetrations + '/10', gameState.defense.x - 20, gameState.defense.y + 50);
-        }
-        
-        function drawGround() {
-            const groundHeight = 80;
-            
-            // Ground gradient
-            const groundGradient = ctx.createLinearGradient(0, canvas.height - groundHeight, 0, canvas.height);
-            groundGradient.addColorStop(0, '#1a1a1a');
-            groundGradient.addColorStop(1, '#0a0a0a');
-            
-            ctx.fillStyle = groundGradient;
-            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, groundHeight);
-            
-            // Ground details
-            ctx.fillStyle = '#222222';
-            for (let i = 0; i < canvas.width; i += 40) {
-                ctx.fillRect(i, canvas.height - groundHeight, 2, 5);
-            }
-            
-            // Ground border
-            ctx.fillStyle = '#333333';
-            ctx.fillRect(0, canvas.height - groundHeight, canvas.width, 3);
-        }
-        
-        function drawSky() {
-            // Dark night sky with subtle gradient
-            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height - 100);
-            skyGradient.addColorStop(0, '#0a0a1a');
-            skyGradient.addColorStop(1, '#101025');
-            
-            ctx.fillStyle = skyGradient;
-            ctx.fillRect(0, 0, canvas.width, canvas.height - 100);
-            
-            // Distant stars (very subtle)
-            for (let i = 0; i < 50; i++) {
-                const x = (i * 24 + gameState.gameTime * 0.02) % canvas.width;
-                const y = (i * 13) % (canvas.height - 200);
-                const size = Math.random() * 0.5;
-                
-                ctx.fillStyle = `rgba(255, 255, 255, ${0.1 + Math.random() * 0.1})`;
-                ctx.beginPath();
-                ctx.arc(x, y, size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        
-        function drawCelestials() {
-            // Subtle moon
-            ctx.fillStyle = 'rgba(200, 200, 220, 0.1)';
-            ctx.beginPath();
-            ctx.arc(canvas.width - 100, 80, 25, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Moon glow
-            ctx.fillStyle = 'rgba(200, 200, 220, 0.05)';
-            ctx.beginPath();
-            ctx.arc(canvas.width - 100, 80, 35, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        
-        function drawRadar() {
-            radarCtx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-            radarCtx.fillRect(0, 0, radarCanvas.width, radarCanvas.height);
-            
-            radarCtx.strokeStyle = '#00ffaa';
-            radarCtx.lineWidth = 1;
-            
-            for (let i = 1; i <= 3; i++) {
-                radarCtx.beginPath();
-                radarCtx.arc(75, 75, i * 20, 0, Math.PI * 2);
-                radarCtx.stroke();
-            }
-            
-            radarCtx.beginPath();
-            radarCtx.moveTo(75, 75);
-            radarCtx.lineTo(75, 25);
-            radarCtx.stroke();
-            
-            radarCtx.beginPath();
-            radarCtx.arc(75, 75, 60, -Math.PI / 3, Math.PI / 3);
-            radarCtx.stroke();
-            
-            radarCtx.fillStyle = '#00ffaa';
-            radarCtx.beginPath();
-            radarCtx.arc(75, 75, 2, 0, Math.PI * 2);
-            radarCtx.fill();
-            
-            gameState.planes.forEach(plane => {
-                const dx = plane.x - gameState.defense.x;
-                const dy = plane.y - gameState.defense.y;
-                const angle = Math.atan2(dy, dx);
-                
-                if (angle >= -Math.PI / 3 && angle <= Math.PI / 3) {
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    const radarDist = Math.min(dist / 10, 60);
-                    const radarX = 75 + radarDist * Math.cos(angle);
-                    const radarY = 75 + radarDist * Math.sin(angle);
-                    
-                    radarCtx.fillStyle = plane.isCyberAttacked ? '#00ffff' : (plane.isLarge ? '#ff6600' : '#ff0055');
-                    radarCtx.beginPath();
-                    radarCtx.arc(radarX, radarY, 2, 0, Math.PI * 2);
-                    radarCtx.fill();
-                }
-            });
-        }
-        
-        function spawnPlanes() {
-            gameState.planeSpawnTimer++;
-            if (gameState.planeSpawnTimer > 300) {
-                gameState.planes.push(new Plane(false));
-                gameState.planeSpawnTimer = 0;
-                showWarning('Plane approaching');
-            }
-            
-            gameState.largeSpawnTimer++;
-            if (gameState.largeSpawnTimer > 1200 && gameState.gameTime > 600) {
-                gameState.planes.push(new Plane(true));
-                gameState.largeSpawnTimer = 0;
-                showWarning('Large aircraft detected');
-            }
-        }
-        
-        function fire() {
-            gameState.fireTimer++;
-            if (gameState.fireTimer > 5) {
-                const dx = mouseX - gameState.defense.x;
-                const dy = mouseY - gameState.defense.y;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist > 0) {
-                    const angle = Math.atan2(dy, dx);
-                    gameState.defense.angle = angle;
-                    gameState.missiles.push(new Missile(gameState.defense.x, gameState.defense.y, mouseX, mouseY));
-                    gameState.fireTimer = 0;
-                }
-            }
-        }
-
-        function launchCyberAttack() {
-            if (gameState.cyberAttackCooldown > 0 || gameState.planes.length === 0) return;
-
-            showWarning('CYBERATTACK LAUNCHED');
-            cyberInstruction.classList.add('hidden');
-            
-            // Make all planes crash to ground with explosions
-            gameState.planes.forEach(plane => {
-                gameState.cyberExplosions.push(new Explosion(plane.x, plane.y, 50, false));
-                plane.isCyberAttacked = true;
-                plane.vx = 0;
-                plane.vy = 3;
-                plane.targetY = canvas.height - 50;
-            });
-
-            // Clear all enemy missiles
-            gameState.enemyMissiles = [];
-
-            gameState.cyberAttackCooldown = gameState.cyberAttackInterval;
-            updateCyberButton();
-        }
-
-        function updateCyberButton() {
-            cyberContainer.innerHTML = '';
-
-            if (gameState.cyberAttackCooldown > 0) {
-                const cooldownSecs = Math.ceil(gameState.cyberAttackCooldown / 60);
-                const btn = document.createElement('div');
-                btn.className = 'cyber-cooldown';
-                btn.textContent = `CYBER: ${cooldownSecs}s`;
-                cyberContainer.appendChild(btn);
-                cyberInstruction.classList.add('hidden');
-            } else {
-                if (gameRunning && gameState.planes.length > 0) {
-                    cyberInstruction.classList.remove('hidden');
-                } else {
-                    cyberInstruction.classList.add('hidden');
-                }
-            }
-        }
-        
-        function showWarning(text) {
-            warningArea.textContent = text;
-            warningArea.classList.remove('hidden');
-            setTimeout(() => {
-                warningArea.classList.add('hidden');
-            }, 1500);
-        }
-        
-        function updateGame() {
-            gameState.gameTime++;
-            
-            if (gameState.cyberAttackCooldown > 0) {
-                gameState.cyberAttackCooldown--;
-                if (gameState.cyberAttackCooldown % 60 === 0) {
-                    updateCyberButton();
-                }
-            } else if (gameRunning && gameState.planes.length > 0 && gameState.cyberAttackCooldown === 0) {
-                cyberInstruction.classList.remove('hidden');
-            }
-            
-            spawnPlanes();
-            
-            if (spacePressed) {
-                fire();
-            }
-            
-            gameState.planes.forEach(plane => plane.update());
-            
-            gameState.explosions.forEach((exp, i) => {
-                exp.update();
-                if (exp.life <= 0) {
-                    gameState.explosions.splice(i, 1);
-                }
-            });
-
-            gameState.cyberExplosions.forEach((exp, i) => {
-                exp.update();
-                if (exp.life <= 0) {
-                    gameState.cyberExplosions.splice(i, 1);
-                }
-            });
-
-            // Update cyberattacked planes - make them crash to ground
-            gameState.planes.forEach((plane, index) => {
-                if (plane.isCyberAttacked) {
-                    plane.y += plane.vy;
-                    if (plane.y >= canvas.height - 50) {
-                        gameState.explosions.push(new Explosion(plane.x, canvas.height - 50, 60, true));
-                        gameState.planes.splice(index, 1);
-                        gameState.planesDestroyed++;
-                    }
-                }
-            });
-            
-            gameState.missiles.forEach((m, i) => {
-                m.update();
-                if (m.life <= 0 || m.x < 0 || m.x > canvas.width || m.y < 0 || m.y > canvas.height) {
-                    gameState.missiles.splice(i, 1);
-                    return;
-                }
-                
-                gameState.planes.forEach((plane, pIndex) => {
-                    const dx = plane.x - m.x;
-                    const dy = plane.y - m.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if (dist < plane.size + m.size) {
-                        plane.health--;
-                        gameState.explosions.push(new Explosion(m.x, m.y, 35, true));
-                        gameState.missiles.splice(i, 1);
-                        
-                        if (plane.health <= 0) {
-                            gameState.explosions.push(new Explosion(plane.x, plane.y, 45, true));
-                            gameState.planes.splice(pIndex, 1);
-                            gameState.planesDestroyed++;
-                        }
-                    }
-                });
-            });
-            
-            gameState.enemyMissiles.forEach((m, i) => {
-                if (m.targetPlane) {
-                    const dx = m.targetPlane.x - m.x;
-                    const dy = m.targetPlane.y - m.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    m.vx = (dx / dist) * 3;
-                    m.vy = (dy / dist) * 3;
-
-                    if (dist < m.targetPlane.size + m.size) {
-                        m.targetPlane.health -= 5;
-                        gameState.explosions.push(new Explosion(m.x, m.y, 40, true));
-                        gameState.enemyMissiles.splice(i, 1);
-                        
-                        if (m.targetPlane.health <= 0) {
-                            gameState.explosions.push(new Explosion(m.targetPlane.x, m.targetPlane.y, 50, true));
-                            const planeIndex = gameState.planes.indexOf(m.targetPlane);
-                            if (planeIndex !== -1) {
-                                gameState.planes.splice(planeIndex, 1);
-                                gameState.planesDestroyed++;
-                            }
-                        }
-                        return;
-                    }
-                } else {
-                    m.x += m.vx;
-                    m.y += m.vy;
-                    
-                    if (m.x < 0 || m.x > canvas.width || m.y < 0 || m.y > canvas.height) {
-                        gameState.enemyMissiles.splice(i, 1);
-                        return;
-                    }
-                    
-                    const dx = gameState.defense.x - m.x;
-                    const dy = gameState.defense.y - m.y;
-                    const dist = Math.sqrt(dx*dx + dy*dy);
-                    
-                    if (dist < 15 + m.size) {
-                        gameState.defense.health -= m.damage;
-                        gameState.explosions.push(new Explosion(m.x, m.y, 30, true));
-                        gameState.enemyMissiles.splice(i, 1);
-                        
-                        if (gameState.defense.health <= 0) {
-                            gameRunning = false;
-                        }
-                    }
-                }
-                
-                m.life--;
-                if (m.life <= 0) {
-                    gameState.enemyMissiles.splice(i, 1);
-                }
-            });
-            
-            gameState.planes = gameState.planes.filter(p => {
-                if (p.x < 0) {
-                    if (!p.isCyberAttacked) {
-                        gameState.penetrations++;
-                    }
-                    if (gameState.penetrations >= 10) {
-                        gameRunning = false;
-                    }
-                    return false;
-                }
-                return true;
-            });
-        }
-        
-        function drawGame() {
-            drawSky();
-            drawCelestials();
-            drawBackgroundBuildings();
-            drawGround();
-            
-            gameState.planes.forEach(p => p.draw());
-            gameState.missiles.forEach(m => m.draw());
-            
-            gameState.enemyMissiles.forEach(m => {
-                ctx.fillStyle = m.targetPlane ? '#00ffff' : '#ff6600';
-                ctx.beginPath();
-                ctx.arc(m.x, m.y, m.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            gameState.explosions.forEach(exp => exp.draw());
-            gameState.cyberExplosions.forEach(exp => exp.draw());
-            
-            drawDefense();
-            drawRadar();
-        }
-        
-        function gameLoop() {
-            if (gameRunning) {
-                updateGame();
-                
-                if (!gameRunning) {
-                    endGame();
-                }
-            }
-            drawGame();
-            requestAnimationFrame(gameLoop);
-        }
-        
-        function endGame() {
-            document.getElementById('gameOverScreen').classList.add('show');
-            document.getElementById('finalStats').textContent = 
-                'Planes destroyed: ' + gameState.planesDestroyed + 
-                ' | Penetrations: ' + gameState.penetrations + '/10';
-        }
-        
-        function startDefense() {
-            document.getElementById('splashScreen').classList.add('hidden');
-            document.getElementById('gameContainer').classList.add('active');
-            gameRunning = true;
-            showWarning('Invasion started');
-            createBackgroundBuildings();
-            updateCyberButton();
-            gameLoop();
-        }
-        
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouseX = e.clientX - rect.left;
-            mouseY = e.clientY - rect.top;
-        });
-        
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                spacePressed = true;
-            }
-            if (e.code === 'KeyC' || e.key === 'c') {
-                launchCyberAttack();
-            }
-        });
-        
-        document.addEventListener('keyup', (e) => {
-            if (e.code === 'Space') {
-                spacePressed = false;
-                gameState.fireTimer = 0;
-            }
-        });
-
-        document.getElementById('startBtn').addEventListener('click', startDefense);
-        
-        gameLoop();
-    </script>
+    <script src="game.js"></script>
 </body>
 </html>
