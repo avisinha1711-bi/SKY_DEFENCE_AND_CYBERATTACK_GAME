@@ -31,7 +31,7 @@ const scoreDisplay = document.getElementById('scoreValue');
 const spawnTimer = document.getElementById('timerValue');
 const waveValueEl = document.getElementById('waveValue');
 
-// Game State
+// Game State - MODIFIED: Increased spawn rates and enemy limits
 const gameState = {
     defense: { 
         x: 150, 
@@ -56,17 +56,17 @@ const gameState = {
     planesDestroyed: 0,
     fireTimer: 0,
     cyberAttackCooldown: 0,
-    cyberAttackInterval: 300,
+    cyberAttackInterval: 180, // Reduced from 300 for more frequent cyber attacks
     cyberAttacksUsed: 0,
     dayNightCycle: 0.5,
     buildings: [],
     spawnTimer: 0,
-    spawnInterval: 1800,
+    spawnInterval: 1200, // Reduced from 1800 for faster waves
     wave: 1,
-    enemyLimit: 4,
-    maxEnemiesInWave: 8,
+    enemyLimit: 6, // Increased from 4
+    maxEnemiesInWave: 12, // Increased from 8
     waveActive: false,
-    enemySpawnRate: 90,
+    enemySpawnRate: 45, // Reduced from 90 for faster enemy spawning
     enemySpawnTimer: 0,
     totalEnemiesThisWave: 0,
     enemiesSpawnedThisWave: 0,
@@ -101,7 +101,7 @@ function initGame() {
     updateSpawnTimer();
     updateWaveDisplay();
     initBuildings();
-    showNotification('DEFENSE SYSTEMS ONLINE - RADAR OPERATIONAL', 'cyber');
+    showNotification('DEFENSE SYSTEMS ONLINE - PRESS C FOR CYBER ATTACK', 'cyber');
     
     console.log("Game initialized successfully");
 }
@@ -254,14 +254,14 @@ function updateStatsDisplay() {
     }
 }
 
-// Aircraft class
+// Aircraft class - MODIFIED: Adjusted speed and health for better balance
 class Aircraft {
     constructor(type) {
         this.type = type;
-        this.health = type === 'BOMBER' ? 600 : 400;
+        this.health = type === 'BOMBER' ? 500 : 350; // Reduced health slightly
         this.x = canvas.width + 100 + Math.random() * 200;
         this.y = 50 + Math.random() * 300;
-        this.vx = -(type === 'BOMBER' ? 1.5 : 2.5);
+        this.vx = -(type === 'BOMBER' ? 1.8 : 3.0); // Increased speed
         this.vy = 0;
         this.size = type === 'BOMBER' ? 35 : 25;
         this.color = type === 'BOMBER' ? '#cc8844' : '#ff4444';
@@ -270,7 +270,7 @@ class Aircraft {
         this.missilesFired = 0;
         this.maxMissiles = 2;
         this.firingTimer = 0;
-        this.fireRate = type === 'BOMBER' ? 200 : 150;
+        this.fireRate = type === 'BOMBER' ? 160 : 120; // Faster firing
     }
     
     update() {
@@ -283,7 +283,7 @@ class Aircraft {
         const distance = Math.sqrt(dx * dx + dy * dy);
         
         if (distance > 200) {
-            this.vy += dy * 0.005;
+            this.vy += dy * 0.006; // More aggressive movement
         }
         
         // Boundary
@@ -298,7 +298,7 @@ class Aircraft {
         // Fire missiles
         this.firingTimer++;
         if (this.firingTimer > this.fireRate && this.missilesFired < this.maxMissiles) {
-            if (Math.random() > 0.8 && distance < 400) {
+            if (Math.random() > 0.7 && distance < 400) { // Increased firing chance
                 this.fireMissile();
             }
             this.firingTimer = 0;
@@ -316,11 +316,11 @@ class Aircraft {
             gameState.enemyMissiles.push({
                 x: this.x,
                 y: this.y,
-                vx: (dx / dist) * 3,
-                vy: (dy / dist) * 3,
+                vx: (dx / dist) * 3.5, // Faster missiles
+                vy: (dy / dist) * 3.5,
                 size: 8,
                 life: 400,
-                damage: this.type === 'BOMBER' ? 35 : 25
+                damage: this.type === 'BOMBER' ? 40 : 30 // Increased damage
             });
             
             this.missilesFired++;
@@ -382,7 +382,7 @@ class Aircraft {
         ctx.restore();
         
         // Health bar
-        const healthPercent = this.health / (this.type === 'BOMBER' ? 600 : 400);
+        const healthPercent = this.health / (this.type === 'BOMBER' ? 500 : 350);
         const barWidth = this.size * 2;
         ctx.fillStyle = '#222';
         ctx.fillRect(this.x - barWidth/2, this.y - this.size - 15, barWidth, 4);
@@ -398,8 +398,8 @@ class Missile {
         const dx = targetX - fromX;
         const dy = targetY - fromY;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        this.vx = (dx / dist) * 8;
-        this.vy = (dy / dist) * 8;
+        this.vx = (dx / dist) * 9; // Faster player missiles
+        this.vy = (dy / dist) * 9;
         this.size = 5;
         this.life = 200;
     }
@@ -454,17 +454,56 @@ class Explosion {
     }
 }
 
+// NEW: Cyber Explosion class for visual feedback
+class CyberExplosion extends Explosion {
+    constructor(x, y) {
+        super(x, y, 60);
+        this.life = 40;
+        this.maxLife = 40;
+    }
+
+    draw() {
+        const alpha = this.life / this.maxLife;
+        const currentSize = this.size * (1 - alpha * 0.5);
+        
+        // Outer cyber glow
+        ctx.fillStyle = `rgba(100, 200, 255, ${alpha * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, currentSize * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Main cyber explosion
+        ctx.fillStyle = `rgba(138, 138, 255, ${alpha * 0.7})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, currentSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Inner core
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, currentSize * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
 function spawnAircraft() {
     if (!gameState.waveActive || gameState.enemiesSpawnedThisWave >= gameState.totalEnemiesThisWave) return;
     
+    // MODIFIED: More aggressive spawning logic
     if (gameState.enemySpawnTimer <= 0 && gameState.planes.length < gameState.enemyLimit) {
-        const type = Math.random() > 0.7 ? 'BOMBER' : 'FIGHTER';
+        // Increased bomber chance in later waves
+        const bomberChance = Math.min(0.4 + (gameState.wave * 0.05), 0.7);
+        const type = Math.random() < bomberChance ? 'BOMBER' : 'FIGHTER';
+        
         const aircraft = new Aircraft(type);
         gameState.planes.push(aircraft);
         gameState.enemiesSpawnedThisWave++;
-        gameState.enemySpawnTimer = gameState.enemySpawnRate;
         
-        if (type === 'BOMBER') {
+        // Faster spawning as wave progresses
+        const waveFactor = Math.min(gameState.wave / 10, 2);
+        gameState.enemySpawnTimer = Math.max(20, gameState.enemySpawnRate / waveFactor);
+        
+        if (type === 'BOMBER' && Math.random() > 0.5) {
             showNotification('HEAVY BOMBER DETECTED', 'warning');
         }
     }
@@ -474,7 +513,8 @@ function startNewWave() {
     if (gameState.waveActive) return;
     
     gameState.waveActive = true;
-    gameState.totalEnemiesThisWave = Math.min(4 + gameState.wave, gameState.maxEnemiesInWave);
+    // MODIFIED: More enemies per wave, faster progression
+    gameState.totalEnemiesThisWave = Math.min(6 + gameState.wave * 1.5, gameState.maxEnemiesInWave);
     gameState.enemiesSpawnedThisWave = 0;
     gameState.enemySpawnTimer = 0;
     
@@ -639,36 +679,73 @@ function fire() {
     }
 }
 
+// MODIFIED: Enhanced cyber attack with visual feedback
 function launchCyberAttack() {
-    if (gameState.cyberAttackCooldown > 0 || gameState.planes.length === 0) return;
+    if (gameState.cyberAttackCooldown > 0 || gameState.planes.length === 0) {
+        if (gameState.cyberAttackCooldown > 0) {
+            showNotification('CYBER SYSTEMS CHARGING...', 'warning');
+        }
+        return;
+    }
 
     gameState.cyberAttacksUsed++;
     
-    // Damage all aircraft
+    // Damage all aircraft based on distance from center
     let totalDamage = 0;
+    let destroyedCount = 0;
+    
     gameState.planes.forEach(aircraft => {
-        const damage = Math.min(150, aircraft.health - 50);
-        if (damage > 0) {
-            aircraft.health -= damage;
-            totalDamage += damage;
+        // Cyber damage: more damage to closer aircraft
+        const distanceToCenter = Math.sqrt(
+            Math.pow(aircraft.x - canvas.width/2, 2) + 
+            Math.pow(aircraft.y - canvas.height/3, 2)
+        );
+        const distanceFactor = Math.max(0.3, 1 - distanceToCenter / 500);
+        const damage = Math.floor(180 * distanceFactor);
+        
+        const actualDamage = Math.min(damage, aircraft.health);
+        aircraft.health -= actualDamage;
+        totalDamage += actualDamage;
+        
+        if (aircraft.health <= 0) {
+            destroyedCount++;
         }
+        
+        // Create mini cyber explosion at each aircraft
+        gameState.cyberExplosions.push(new CyberExplosion(aircraft.x, aircraft.y));
     });
     
-    if (totalDamage > 0) {
-        // Cyber explosion
-        gameState.cyberExplosions.push(new Explosion(
-            canvas.width / 2,
-            canvas.height / 3,
-            50
-        ));
-        
-        showNotification(`CYBER ATTACK! -${totalDamage}`, 'cyber');
-        gameState.score += totalDamage * 2;
-        updateScoreDisplay();
+    // Create main cyber explosion at center
+    gameState.cyberExplosions.push(new CyberExplosion(
+        canvas.width / 2,
+        canvas.height / 3
+    ));
+    
+    // Score calculation
+    const scoreBonus = totalDamage * 3 + destroyedCount * 100;
+    gameState.score += scoreBonus;
+    gameState.planesDestroyed += destroyedCount;
+    
+    // Update UI
+    updateScoreDisplay();
+    updateStatsDisplay();
+    updateEnemyDisplay();
+    
+    // Show notification with results
+    if (destroyedCount > 0) {
+        showNotification(`CYBER ATTACK! ${destroyedCount} TARGETS DESTROYED +${scoreBonus}`, 'cyber');
+    } else if (totalDamage > 0) {
+        showNotification(`CYBER ATTACK! -${totalDamage} DAMAGE +${scoreBonus}`, 'cyber');
+    } else {
+        showNotification('CYBER ATTACK - NO DAMAGE', 'warning');
     }
-
+    
+    // Set cooldown
     gameState.cyberAttackCooldown = gameState.cyberAttackInterval;
     updateCyberButton();
+    
+    // Remove destroyed aircraft
+    gameState.planes = gameState.planes.filter(aircraft => aircraft.health > 0);
 }
 
 function updateCyberButton() {
@@ -866,7 +943,8 @@ function updateGame() {
 function endWave() {
     gameState.waveActive = false;
     gameState.waitingForNewWave = true;
-    gameState.spawnTimer = gameState.spawnInterval;
+    // MODIFIED: Faster wave progression
+    gameState.spawnTimer = Math.max(600, gameState.spawnInterval - (gameState.wave * 30));
     gameState.wave++;
     
     if (gameState.planes.length === 0) {
@@ -951,7 +1029,8 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         spacePressed = true;
     }
-    if (e.code === 'KeyC' || e.key === 'c') {
+    // NEW: C key for cyber attack
+    if ((e.code === 'KeyC' || e.key === 'c') && gameRunning) {
         launchCyberAttack();
     }
     if (e.code === 'KeyR' || e.key === 'r') {
@@ -971,6 +1050,9 @@ document.addEventListener('keyup', (e) => {
 
 cyberButton.addEventListener('click', launchCyberAttack);
 document.getElementById('startBtn').addEventListener('click', startGame);
+
+// NEW: Add keyboard shortcut hint
+showNotification('PRESS C FOR CYBER ATTACK | SPACE TO FIRE | ESC TO PAUSE', 'cyber');
 
 // Initialize and start game
 console.log("Script loaded, initializing...");
